@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+
+
+{% block title %}
+
+<title>home </title>
+
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/ag-grid-community@30.0.6/styles/ag-grid.css" />
+
+<script src="https://unpkg.com/ag-grid-community/dist/ag-grid-community.min.js"></script>
+
+{% endblock title %}
+
+{% block mainsection %}
+
+<body>
+    <nav class="navbar navbar-expand-lg navcolor">
+        <div class="container-fluid">
+          <a class="navbar-brand text-light" href="#">URL Shortner</a>
+          <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarText" aria-controls="navbarText" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+          </button>
+          <div class="collapse navbar-collapse" id="navbarText">
+
+            <ul class="navbar-nav ms-auto mb-2 mb-lg-0">
+                <li class="nav-item dropdown">
+                    <a class="nav-link dropdown-toggle text-light" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+                      {{uemail}}
+                    </a>
+                    <ul class="dropdown-menu">
+                      <li><a class="dropdown-item" style="font-size:0.8rem;" href="{{url_for('logout')}}" onclick="logoutlocal()">Logout</a></li>
+                        <li><a class="dropdown-item" style="font-size:0.8rem;" href="{{url_for('forget_password')}}">Change <br> Password</a></li>
+                    </ul>
+                  </li>
+
+            </ul>
+          </div>
+        </div>
+    </nav>
+
+    <div class="container">
+        <div class="row mt-5">
+          <div style="position: relative;float: right;">
+            <button class="btn btn-sm btn-success text-right" style="width: 10rem;" id="urlcontrol" data-bs-toggle="modal" data-bs-target="#urlcontrolpopup">
+              Control URL
+            </button>
+          </div>
+
+        </div>
+        <div class="row mt-3">
+            <div id="myGrid" style="height: 25rem;" class="ag-theme-alpine"></div>
+        </div>
+
+
+
+    </div>
+
+    <!--POP up code-->
+    <div class="modal fade" id="urlcontrolpopup" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal-dialog">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h1 class="modal-title fs-5" id="exampleModalLabel"></h1>
+            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+          </div>
+          <div class="modal-body">
+
+          </div>
+        </div>
+      </div>
+    </div>
+
+
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>.
+<script>
+
+    var columnDefs = [
+    {headerName: "RID", field: "rid",hide:true},
+    {headerName: "URL Short Name", field: "u_st_nm",checkboxSelection: true},
+    {
+            headerName:"Power URL",
+            field: 'newurl',
+            valueGetter: params => {
+
+            return window.location.href+"{{uemail}}"+"/"+ params.data.u_st_nm
+
+            },
+            cellRenderer: function(params) {
+                return '<a href='+params.value+' target="_blank" rel="noopener">'+ params.value+'</a>'
+                }
+     },
+    {headerName: "Actual URL", field: "a_url"},
+    {headerName: "Created Time", field: "creation_time"},
+
+  ];
+
+  // specify the data
+  var rowData = {{rdata|tojson}}
+
+
+  // let the grid know which columns and what data to use
+  var gridOptions = {
+    defaultColDef: {
+        resizable: true,
+    },
+    suppressDragLeaveHidesColumns: true,
+    columnDefs: columnDefs,
+    onFirstDataRendered: onFirstDataRendered,
+
+    rowData: rowData
+  };
+  function onFirstDataRendered(params) {
+    params.api.sizeColumnsToFit();
+  }
+
+
+  // setup the grid after the page has finished loading
+  document.addEventListener('DOMContentLoaded', function() {
+      var gridDiv = document.querySelector('#myGrid');
+      new agGrid.Grid(gridDiv, gridOptions);
+  });
+
+
+
+
+function updatedata(){
+
+    document.querySelector('#dataedit').action = "/updatedata";
+    document.querySelector('#dataedit').submit();
+
+
+}
+
+function deletedata(){
+
+    document.querySelector('#dataedit').action = "/deletedata";
+    document.querySelector('#dataedit').submit();
+}
+
+
+  document.querySelector('#urlcontrol').addEventListener('click',function(){
+    var selectedRow = gridOptions.api.getSelectedRows();
+    console.log(selectedRow[0])
+
+    if(selectedRow[0]){
+        document.querySelector('.modal-title').innerHTML=`Update URL Data`;
+        document.querySelector('.modal-body').innerHTML=`
+            <form class="row g-3" id="dataedit" method="post" action="">
+
+                <div class="col-12">
+                    <label for="inputURL" class="form-label">URL</label>
+                    <input type="text" class="form-control" name="url_nm" id="inputURL" value="${selectedRow[0]['a_url'][0]}" placeholder="https://www.google.com/">
+                </div>
+                <div class="col-12">
+                    <label for="inputURLName" class="form-label">Provide a Short Name</label>
+                    <input type="text" class="form-control" name="url_st_nm" value="${selectedRow[0]['u_st_nm'][0]}" id="inputURLName" placeholder="favsite">
+                </div>
+                 <input type="number" name="selected_rid" value="${selectedRow[0]['rid'][0]}" hidden>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary" onclick="updatedata()">Save</button>
+                    <button type="submit" class="btn btn-danger" onclick="deletedata()">Delete</button>
+                </div>
+            </form>`;
+
+    }else{
+
+        document.querySelector('.modal-title').innerHTML=`Add URL Data`;
+
+        document.querySelector('.modal-body').innerHTML=`
+            <form class="row g-3" method="post" action="/addnewdata">
+
+                <div class="col-12">
+                    <label for="inputURL" class="form-label">URL</label>
+                    <input type="text" class="form-control" name="url_nm" id="inputURL" placeholder="https://www.google.com/">
+                </div>
+                <div class="col-12">
+                    <label for="inputURLName" class="form-label">Provide a Short Name</label>
+                    <input type="text" class="form-control"  name="url_st_nm" id="inputURLName" placeholder="favsite">
+                </div>
+
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>`;
+
+    }
+
+  })
+
+function logoutlocal(){
+    localStorage.removeItem("useremail");
+    localStorage.removeItem("userpassword");
+}
+
+var d = "{{cvalue}}".toString();
+console.log(d)
+
+</script>
+
+
+{% endblock mainsection %}
